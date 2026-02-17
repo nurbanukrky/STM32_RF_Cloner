@@ -1,0 +1,14 @@
+../Core/Src/main.c:63:5:_write	1
+../Core/Src/main.c:71:5:main	14
+../Core/Src/main.c:288:13:ProcessCommand	50
+../Core/Src/main.c:616:13:PrintHelp	1
+../Core/Src/main.c:661:6:HAL_UART_RxCpltCallback	2
+../Core/Src/main.c:726:6:HAL_TIM_IC_CaptureCallback	3
+../Core/Src/main.c:744:13:DWT_Init	1
+../Core/Src/main.c:789:13:VerifyInputCapture	11
+../Core/Src/main.c:955:6:SystemClock_Config	3
+../Core/Src/main.c:991:13:MX_SPI1_Init	2
+../Core/Src/main.c:1011:13:MX_TIM2_Init	6
+../Core/Src/main.c:1068:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:1084:13:MX_GPIO_Init	1
+../Core/Src/main.c:1172:6:Error_Handler	1

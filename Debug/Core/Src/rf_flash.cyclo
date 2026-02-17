@@ -1,0 +1,6 @@
+../Core/Src/rf_flash.c:16:26:EraseFlashSector	2
+../Core/Src/rf_flash.c:47:26:WriteFlashData	4
+../Core/Src/rf_flash.c:83:6:RF_IsFlashDataValid	1
+../Core/Src/rf_flash.c:89:19:RF_SaveSlotsToFlash	4
+../Core/Src/rf_flash.c:133:19:RF_LoadSlotsFromFlash	4
+../Core/Src/rf_flash.c:162:19:RF_EraseFlashData	1

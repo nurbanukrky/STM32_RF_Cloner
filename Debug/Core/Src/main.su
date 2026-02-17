@@ -1,0 +1,14 @@
+../Core/Src/main.c:63:5:_write	24	static
+../Core/Src/main.c:71:5:main	24	static
+../Core/Src/main.c:288:13:ProcessCommand	32	static
+../Core/Src/main.c:616:13:PrintHelp	8	static
+../Core/Src/main.c:661:6:HAL_UART_RxCpltCallback	16	static
+../Core/Src/main.c:726:6:HAL_TIM_IC_CaptureCallback	24	static
+../Core/Src/main.c:744:13:DWT_Init	4	static
+../Core/Src/main.c:789:13:VerifyInputCapture	48	static
+../Core/Src/main.c:955:6:SystemClock_Config	88	static
+../Core/Src/main.c:991:13:MX_SPI1_Init	8	static
+../Core/Src/main.c:1011:13:MX_TIM2_Init	48	static
+../Core/Src/main.c:1068:13:MX_USART2_UART_Init	8	static
+../Core/Src/main.c:1084:13:MX_GPIO_Init	48	static
+../Core/Src/main.c:1172:6:Error_Handler	4	static,ignoring_inline_asm

@@ -1,0 +1,12 @@
+../Core/Src/cc1101_debug.c:13:13:CC1101_MarcStateToString	24
+../Core/Src/cc1101_debug.c:45:6:CC1101_FullDiagnostic	20
+../Core/Src/cc1101_debug.c:136:6:CC1101_VerifyRegisters	3
+../Core/Src/cc1101_debug.c:217:6:CC1101_TestGDO0_AllModes	11
+../Core/Src/cc1101_debug.c:326:6:CC1101_MonitorRSSI	5
+../Core/Src/cc1101_debug.c:394:6:CC1101_RawPinMonitor	10
+../Core/Src/cc1101_debug.c:515:6:CC1101_TestWithPullUp	1
+../Core/Src/cc1101_debug.c:551:6:CC1101_RSSIHistogram	14
+../Core/Src/cc1101_debug.c:624:6:CC1101_CarrierSenseTest	6
+../Core/Src/cc1101_debug.c:700:6:CC1101_SignalDetectionTest	10
+../Core/Src/cc1101_debug.c:766:6:CC1101_AGCTest	5
+../Core/Src/cc1101_debug.c:817:6:CC1101_LiveMonitor	1
