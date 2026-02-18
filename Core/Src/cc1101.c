@@ -1,7 +1,6 @@
 /**
  * @file cc1101.c
  * @brief CC1101 RF Transceiver Driver Implementation
- * @author Bitirme Projesi
  */
 
 #include "cc1101.h"
@@ -234,7 +233,7 @@ void CC1101_SetTxMode(CC1101_HandleTypeDef *hcc)
     CC1101_WriteStrobe(hcc, CC1101_SIDLE);
     HAL_Delay(1);
 
-    // ✅ KRİTİK: TX sırasında CCA kapalı olmalı (yoksa STX bloklanabilir / burst gibi görünür)
+    // TX sırasında CCA kapalı olmalı (yoksa STX bloklanabilir / burst gibi görünür)
     // CCA_MODE=0, RXOFF/TXOFF=0
     CC1101_WriteReg(hcc, CC1101_MCSM1, 0x00);
 
@@ -250,53 +249,6 @@ void CC1101_SetIdleMode(CC1101_HandleTypeDef *hcc)
 
 /* ==================== GDO0 Configuration ==================== */
 
-/**
- * @brief Configure GDO0 for INVERTED Raw Demodulated Data Output
- *
- * UPDATED APPROACH: Mode 0x4D (Serial Sync Data INVERTED) + Pull-up
- * ====================================================================
- *
- * PROBLEM DISCOVERED (2026-01-15):
- * ---------------------------------
- * - GDO0 output is VERY WEAK (can only pull to 0.050V, not 3.3V)
- * - Software polling sees 622 transitions
- * - But Input Capture sees 0 interrupts
- * - Reason: GDO0 HIGH voltage (0.050V) is below Input Capture threshold (2.0V)
- *
- * SOLUTION: INVERTED MODE + PULL-UP
- * ----------------------------------
- * Mode 0x4D = Mode 0x0D with bit 6 set (INVERT)
- *
- * How it works:
- *   - 10kΩ pull-up resistor: PA0 → 3.3V (external hardware)
- *   - GDO0 INVERTED: When signal LOW → GDO0 tries HIGH (but weak, ~0.050V)
- *                    When signal HIGH → GDO0 pulls LOW (strong, 0V)
- *
- *   With inversion:
- *   - When CC1101 wants LOW: GDO0 releases → Pull-up brings PA0 to 3.3V ✅
- *   - When CC1101 wants HIGH: GDO0 pulls down → PA0 goes to 0V ✅
- *
- * Result:
- *   - PA0 swings between 0V and 3.3V (full range)
- *   - Input Capture can detect both edges
- *   - Interrupts will trigger
- *
- * HARDWARE REQUIREMENT:
- * ---------------------
- * ⚠️  10kΩ PULL-UP RESISTOR REQUIRED! ⚠️
- *
- * Connect: PA0 ----[ 10kΩ ]---- 3.3V
- *
- * This is the opposite of previous approach!
- * Now pull-up is NEEDED because GDO0 is inverted.
- *
- * MODE 0x4D BEHAVIOR:
- * -------------------
- * - Bit pattern is INVERTED from 0x0D
- * - PA0 = HIGH when no signal (pull-up)
- * - PA0 = LOW when 433MHz signal detected (GDO0 pulls down)
- * - Perfect for weak GDO0 drivers
- */
 void CC1101_ConfigureGDO0_RawData(CC1101_HandleTypeDef *hcc)
 {
     // GDO0 = 0x0D: Asynchronous Serial Data Output
