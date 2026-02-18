@@ -1,7 +1,6 @@
 /**
  * @file main.h
  * @brief Main header file with pin definitions
- * @author Bitirme Projesi
  */
 
 #ifndef __MAIN_H
