@@ -1,7 +1,6 @@
 /**
  * @file rf_flash.h
  * @brief RF Signal FLASH Storage Module
- * @author Bitirme Projesi
  *
  * Bu modul, RF slot verilerini FLASH belleğe kaydeder ve yukler.
  * STM32 reset edilse bile veriler kalir.
