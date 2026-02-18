@@ -1,7 +1,6 @@
 /**
  * @file rf_signal.h
  * @brief RF Signal Capture and Replay Module
- * @author Bitirme Projesi
  *
  * Bu modul, CC1101'den gelen ham RF sinyallerini Input Capture ile yakalar
  * ve ayni sinyali geri gonderebilir. Protokolden bagimsiz calisir.
