@@ -1,7 +1,6 @@
 /**
  * @file cc1101_debug.c
  * @brief CC1101 Comprehensive Debug Module Implementation
- * @author Bitirme Projesi
  */
 
 #include "cc1101_debug.h"
@@ -167,53 +166,7 @@ void CC1101_VerifyRegisters(CC1101_HandleTypeDef *hcc)
 
 /* ==================== GDO0 All Modes Test ==================== */
 
-/**
- * @brief CC1101 GDO0 Tum Modlarda Test
- *
- * AMAC: Farkli GDO0 konfigurasyonlarini test eder
- *
- * MEVCUT DURUM ANALIZI:
- * ---------------------
- * Kullanici raporuna gore:
- *   - GDO0-GND arasi: 3.3V (sureli HIGH)
- *   - Kumandaya basinca: 3.0V (hala HIGH, cok az dusus)
- *   - PA0-GND arasi manuel kisa devre yapinca: LED yaniyor (IC calisiyor)
- *
- * SORUN: GDO0 modu 0x0D (Serial Sync Data)
- * Bu mod demodule edilmis veri cikisi yapar, ama:
- *   - Sinyal yoksa veya sync word bulunamazsa: GDO0 HIGH kaliyor
- *   - ASK/OOK modulasyonunda sync word olmayabilir
- *   - Bu yuzden GDO0 surekli HIGH ve kesme tetiklenmiyor
- *
- * COZUM: Farkli GDO0 modunu dene
- *
- * TEST EDILECEK MODLAR:
- * ---------------------
- * 1. Mode 0x0D - Serial Sync Data (mevcut, calismıyor)
- *    Problem: Sync word gerektiriyor, ASK/OOK'da olmayabilir
- *
- * 2. Mode 0x0E - Carrier Sense (ÖNERİLEN!)
- *    - RSSI > threshold oldugunda HIGH
- *    - 433MHz sinyal geldiginde PA0 HIGH olur
- *    - Sinyal yoksa PA0 LOW
- *    - ASK/OOK icin ideal
- *
- * 3. Mode 0x06 - Sync Word Sent/Received
- *    - Sync word bulundugunda assert
- *    - Packet mode icin uygun
- *
- * 4. Mode 0x2F/0x6F - Test modlari
- *    - 0x2F: Surekli LOW
- *    - 0x6F: Surekli HIGH
- *    - Donanim testi icin kullanilir
- *
- * BEKLENEN SONUC:
- * ---------------
- * Mode 0x0E (Carrier Sense) ile:
- *   - Kumandaya basmadan once: PA0 = LOW (sinyal yok)
- *   - Kumandaya basinca: PA0 = HIGH (433MHz sinyal algilandi)
- *   - Bu mod ile Input Capture tetiklenmeli
- */
+
 void CC1101_TestGDO0_AllModes(CC1101_HandleTypeDef *hcc)
 {
     printf("\r\n");
@@ -353,44 +306,7 @@ void CC1101_MonitorRSSI(CC1101_HandleTypeDef *hcc, uint16_t duration_ms)
     }
 }
 
-/* ==================== Raw Pin Monitor ==================== */
 
-/**
- * @brief GDO0 Voltaj Seviyesi ve Gecis Testi
- *
- * AMAC: PA0 pininin voltaj seviyelerini izler ve gecis sayar
- *
- * TEST PROSEDURU:
- * ---------------
- * 1. Multimetre ile PA0 voltajini olc:
- *    - Kumandaya BASMADAN once: ~3.3V olmali (pull-up ile HIGH)
- *    - Kumandaya BASTIKTAN sonra: 0V-3.3V arasi dalgalanmali
- *
- * 2. Bu fonksiyon software polling ile gecisleri sayar:
- *    - HAL_GPIO_ReadPin() ile PA0 durumunu okur
- *    - Durum degisikliklerini sayar (LOW->HIGH veya HIGH->LOW)
- *    - Beklenen: Kumandaya bastiktan sonra 100+ gecis
- *
- * BEKLENEN SONUCLAR:
- * ------------------
- * - transitions > 100: [OK] Sinyal dogru gelmiyor, IC calismali
- * - transitions 1-100: [UYARI] Zayif sinyal, voltaj seviyesi dusuk olabilir
- * - transitions = 0:   [HATA] GDO0 sinyal uremiyor veya baglanti kopuk
- *
- * SORUN GIDERME:
- * --------------
- * Eger transitions = 0:
- *   a) Multimetre ile PA0 voltajini olc
- *      - Basmadan once 0.007V ise: Pull-up eksik/calismyor
- *      - Her zaman 3.3V ise: GDO0 sinyal uretmiyor (CC1101 sorunu)
- *   b) CC1101 IOCFG0 register kontrol et (komut: 'd')
- *   c) GDO0 test modlarini dene (komut: 't')
- *
- * Eger transitions < 100:
- *   - PA0 voltaj seviyeleri STM32 threshold'una yetmiyordur
- *   - Internal pull-up (40K) yerine external 10K pull-up dene
- *   - CC1101 GDO0 driver strength ayarini kontrol et
- */
 void CC1101_RawPinMonitor(uint16_t duration_ms)
 {
     printf("\r\n╔══════════════════════════════════════════╗\r\n");
