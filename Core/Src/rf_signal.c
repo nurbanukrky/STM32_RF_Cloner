@@ -1,7 +1,6 @@
 /**
  * @file rf_signal.c
  * @brief RF Signal Capture and Replay Implementation
- * @author Bitirme Projesi
  */
 
 #include "rf_signal.h"
@@ -34,23 +33,6 @@ void RF_Init(RF_HandleTypeDef *hrf, TIM_HandleTypeDef *htim, uint32_t channel,
     // TX pin'i LOW'da baslat
     HAL_GPIO_WritePin(tx_port, tx_pin, GPIO_PIN_RESET);
 
-    /* CRITICAL FIX: Direct TIM2 register configuration
-     *
-     * PROBLEM: HAL_TIM_IC_Start_IT() doesn't reliably start interrupts at boot
-     * - HAL state machine issues
-     * - Timing dependencies
-     * - Unreliable across different code paths
-     *
-     * SOLUTION: Use same direct register configuration as VerifyInputCapture()
-     * - Bypass HAL completely
-     * - Configure TIM2 registers directly
-     * - Enable NVIC directly
-     * - Proven to work in 'v' test (8607 interrupts)
-     *
-     * Date: 2026-01-16
-     * Issue: Interrupts work in 'v' test but not during 'c' capture
-     * Root cause: HAL_TIM_IC_Start_IT() unreliable, direct register access required
-     */
 
     // Enable TIM2 counter and set Clock Division to 4 (fDTS = fINT / 4)
     // This slows down the Input Capture Filter for better noise rejection
@@ -99,46 +81,11 @@ void RF_StartCapture(RF_HandleTypeDef *hrf)
     hrf->last_capture = 0;
     hrf->capture_start_tick = HAL_GetTick();
 
-    /* REMOVED: HAL_TIM_IC_Start_IT() call
-     *
-     * REASON: TIM2 Input Capture is already running from VerifyInputCapture() test
-     * or should be started once at boot in MX_TIM2_Init().
-     *
-     * Calling HAL_TIM_IC_Start_IT() on an already-running timer causes HAL state
-     * machine conflict, preventing interrupts from firing during capture.
-     *
-     * FIX: TIM2 stays running continuously - just change RF state to CAPTURING
-     * to enable RF_CaptureCallback() to process incoming edges.
-     *
-     * Date: 2026-01-16
-     * Issue: Signal capture failed despite interrupts working in 'v' test
-     * Root cause: HAL state machine conflict from duplicate Start_IT calls
-     */
+  
 }
 
 void RF_StopCapture(RF_HandleTypeDef *hrf)
 {
-    /* CRITICAL FIX: Do NOT stop timer interrupts!
-     *
-     * PROBLEM: HAL_TIM_IC_Stop_IT() was disabling interrupts after first capture
-     * - RF_Init() uses direct register config (bypasses HAL)
-     * - Calling HAL_TIM_IC_Stop_IT() creates state machine conflict
-     * - After first capture: interrupts disabled permanently
-     * - Second 'c' command: No interrupts, no LED, no capture
-     *
-     * SOLUTION: Let interrupts run continuously
-     * - RF_CaptureCallback() checks state (line 122)
-     * - If state != CAPTURING, callback returns immediately
-     * - No need to stop/restart interrupts
-     * - Simpler, more reliable
-     *
-     * Date: 2026-01-16
-     * Issue: LED never blinks, interrupts stop after first capture
-     * Root cause: HAL_TIM_IC_Stop_IT() conflicts with direct register init
-     *
-     * REMOVED: HAL_TIM_IC_Stop_IT(hrf->htim_capture, hrf->tim_channel);
-     */
-
     // Eger yeterli veri yakalandiysa CAPTURED durumuna gec
     if (hrf->signal.count >= 10) {  // En az 10 gecis olmali
         hrf->state = RF_STATE_CAPTURED;
@@ -251,8 +198,7 @@ void RF_ReplaySignal(RF_HandleTypeDef *hrf, uint8_t repeat_count)
         // KRITIK: Interrupt'lari kapama (Gerek yok)
         // __disable_irq();
 
-    	uint8_t current_level = !hrf->signal.start_level;   // ✅ invert
-        // Use FULL signal duration (no trimming)
+    	uint8_t current_level = !hrf->signal.start_level;  
         uint16_t start_index = 0;
 
         // Her gecis icin
@@ -679,7 +625,7 @@ void RF_ReplayTest(RF_HandleTypeDef *hrf, CC1101_HandleTypeDef *hcc_tx)
         // KRITIK: Interrupt'lari kapama (Test edildi, gerek yok)
         // __disable_irq();
 
-        uint8_t current_level = !hrf->signal.start_level;   // ✅ TX invert
+        uint8_t current_level = !hrf->signal.start_level;   
 
         // Use FULL signal duration (no trimming) to match capture exactly
         uint16_t start_index = 0;
