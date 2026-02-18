@@ -1,7 +1,6 @@
 /**
  * @file rf_flash.c
  * @brief RF Signal FLASH Storage Implementation
- * @author Bitirme Projesi
  */
 
 #include "rf_flash.h"
