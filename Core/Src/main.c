@@ -1,7 +1,6 @@
 /**
  * @file main.c
  * @brief RF Signal Cloner - Main Application
- * @author Bitirme Projesi
  *
  * NUCLEO-F401RE + 2x CC1101 ile calisan ogrenen kumanda sistemi.
  *
@@ -111,7 +110,7 @@ int main(void)
     } else {
         printf("[OK] TX CC1101 hazir.\r\n");
 
-        // ✅ KRİTİK: TX tarafında GDO0 DATA INPUT olmalı (MCU -> CC1101 veri girişi)
+        // TX tarafında GDO0 DATA INPUT olmalı (MCU -> CC1101 veri girişi)
         // 0x2D = Asynchronous Serial Data Input
         CC1101_WriteReg(&hcc_tx, CC1101_IOCFG0, 0x2D);
 
@@ -122,50 +121,7 @@ int main(void)
     RF_Init(&hrf, &htim2, TIM_CHANNEL_1, TX_GDO0_GPIO_Port, TX_GDO0_Pin);
     printf("[OK] RF Signal modulu hazir.\r\n");
 
-    /* ===================================================================
-     * DONANIM TEST PROSEDURU
-     * ===================================================================
-     * Bu testler donanim baglantisini ve IC kesme sistemini dogrular.
-     *
-     * TEST 1: LED Toggle Test (PC13)
-     * -------------------------------
-     * Amac: HAL_Delay() ve GPIO calistigini dogrula
-     * Beklenen: PC13 LED 10 kez yanip sonmeli (1 saniye)
-     *
-     * TEST 2: TIM2 Register Verification
-     * -----------------------------------
-     * Amac: Input Capture donanim yapilandirmasini dogrula
-     * Beklenen degerler:
-     *   - TIM2->DIER = 0x00000002 (bit 1: CC1IE - Input Capture 1 kesme aktif)
-     *   - TIM2->CR1  = 0x00000001 (bit 0: CEN - Timer counter aktif)
-     *   - PA0 MODER  = 0x00000002 (10b = Alternate Function mode)
-     *   - PA0 AFR[0] = 0x00000001 (0001b = AF1 = TIM2_CH1)
-     *
-     * Hata durumlar:
-     *   - DIER != 0x02: HAL_TIM_IC_Start_IT() cagrilmamis
-     *   - CR1 != 0x01: Timer baslamamis
-     *   - MODER != 0x02: PA0 AF modunda degil (Input Capture calismaz)
-     *   - AFR != 0x01: PA0 TIM2_CH1'e baglanmamis
-     *
-     * TEST 3: Input Capture Interrupt Test
-     * -------------------------------------
-     * Amac: IC kesme tetiklediginde LED yanip sonmeli
-     * Test yontemi:
-     *   1. Kumandaya bas
-     *   2. GDO0 sinyal cikisi yaptiginda PA0'a gelir
-     *   3. TIM2 Input Capture kesmesi tetiklenir
-     *   4. HAL_TIM_IC_CaptureCallback() cagirilir
-     *   5. PC13 LED her kesmede toggle olur
-     *
-     * Beklenen: Kumandaya bastiginda LED hizla yanip sonmeli
-     *
-     * Hata durumlar:
-     *   - LED yanip sonmuyorsa:
-     *     a) PA0 voltaji cok dusuk (<2.0V): Pull-up gerekli
-     *     b) CC1101 GDO0 sinyal uretmiyor: IOCFG0 register kontrol et
-     *     c) IC kesme cagirilmiyor: NVIC veya TIM2 AF hatasi
-     * =================================================================== */
-
+   
     /* PROPER DWT INIT & CLOCK UPDATE */
     SystemCoreClockUpdate(); // Update SystemCoreClock variable
     // Force 84MHz if update fails or HSE_VALUE is wrong (common STM32 issue)
@@ -190,8 +146,6 @@ int main(void)
 
     /* TEST 2: TIM2 Register Verification */
     printf("TEST 2: TIM2 Register Verification\r\n");
-    // NOTE: HAL_TIM_IC_Start_IT() already called in RF_Init() - DO NOT call again!
-    // Calling it twice causes Input Capture state machine conflicts
     printf("  TIM2->DIER   = 0x%08lX (beklenen: 0x00000002)\r\n", TIM2->DIER);
     printf("  TIM2->CR1    = 0x%08lX (beklenen: 0x00000001)\r\n", TIM2->CR1);
     printf("  PA0 MODER    = 0x%08lX (beklenen: 0x00000002)\r\n", GPIOA->MODER & 0x3);
@@ -261,25 +215,6 @@ int main(void)
             // CRITICAL: Set state to IDLE to prevent infinite loop
             hrf.state = RF_STATE_IDLE;
         }
-
-        /* REMOVED: HAL_Delay blocks TIM2 interrupts during capture!
-         *
-         * PROBLEM: HAL_Delay(10) was blocking the main loop for 10ms each iteration
-         * - During this delay, TIM2 interrupt handler could not update RF state
-         * - This prevented RF_Process() from seeing capture completion
-         * - Result: Capture never completed, transitions never recorded
-         *
-         * SOLUTION: Remove delay entirely
-         * - Main loop runs at full speed
-         * - RF_Process() called frequently to check timeout
-         * - TIM2 interrupts can occur anytime and update RF state immediately
-         *
-         * CPU usage will increase but this is acceptable for real-time RF capture
-         *
-         * Date: 2026-01-16
-         * Issue: Signal capture showing 0 transitions despite interrupts working
-         * Root cause: HAL_Delay blocking main loop and preventing state updates
-         */
         // HAL_Delay(10);  // REMOVED - blocks interrupts!
     }
 }
@@ -325,7 +260,7 @@ static void ProcessCommand(char cmd)
             }
             printf("\r\n[REPLAY] Sinyal gonderiliyor...\r\n");
 
-            // ✅ Replay sırasında IC interrupt kapat (timing bozulmasın)
+            // Replay sırasında IC interrupt kapat (timing bozulmasın)
             TIM2->DIER &= ~TIM_DIER_CC1IE;
             TIM2->SR = 0;
 
@@ -336,7 +271,7 @@ static void ProcessCommand(char cmd)
 
             CC1101_SetIdleMode(&hcc_tx);
 
-            // ✅ IC interrupt geri aç
+            // IC interrupt geri aç
             TIM2->SR = 0;
             TIM2->DIER |= TIM_DIER_CC1IE;
 
@@ -669,60 +604,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 /* TIM2 Input Capture Callback -----------------------------------------------*/
-/**
- * @brief Input Capture Kesme Callback Fonksiyonu
- *
- * AMAC: PA0 pininde voltage transition oldugunda cagirilir
- *
- * CALISMA MEKANIZMASI:
- * --------------------
- * 1. CC1101 GDO0 pini PA0'a baglidir
- * 2. GDO0 sinyal cikisi yaptiginda PA0 voltaji degisir (HIGH<->LOW)
- * 3. TIM2 Input Capture donanimi PA0'daki kenar degisimini alglar
- * 4. Her kenar (rising/falling) oldugunda bu callback tetiklenir
- * 5. TIM2 counter degeri okunarak pulse suresi hesaplanir
- *
- * DEBUG AMACIYLA:
- * ---------------
- * - Her callback cagrildiginda PC13 LED toggle edilir
- * - Kumandaya bastiginda LED hizla yanip sonmeli
- * - LED yanmiyorsa callback cagirilmiyor demektir
- *
- * CALLBACK CAGRILMAMA NEDENLERI:
- * -------------------------------
- * 1. PA0 voltaj seviyeleri yetersiz:
- *    - HIGH seviye <2.0V ise STM32 tanimaz
- *    - Cozum: Pull-up resistor ekle/guclendir
- *
- * 2. TIM2 Input Capture baslamamis:
- *    - HAL_TIM_IC_Start_IT() cagrilmamis
- *    - TIM2->DIER register bit 1 = 0
- *
- * 3. PA0 Alternate Function yanlis:
- *    - PA0 AF1 (TIM2_CH1) olarak ayarlanmamis
- *    - GPIOA->MODER bit [1:0] != 10b (AF mode)
- *    - GPIOA->AFR[0] bit [3:0] != 0001b (AF1)
- *
- * 4. NVIC kesme deaktif:
- *    - TIM2 interrupt NVIC'de aktif degil
- *    - HAL_NVIC_EnableIRQ(TIM2_IRQn) cagrilmamis
- *
- * 5. GDO0 sinyal uretmiyor:
- *    - CC1101 RX modunda degil
- *    - IOCFG0 register yanlis (GDO0 config)
- *    - Sinyal gelmiyorsa RSSI kontrol et
- *
- * TEST YONTEMI:
- * -------------
- * 1. Kodu yukle
- * 2. Kumandaya bas
- * 3. PC13 LED'in hizla yanip sondugunu gozlemle
- *
- * Eger LED yanmiyorsa:
- *    - Terminal'de TEST 2 sonuclarini kontrol et
- *    - 'p' komutu ile Raw Pin Monitor calistir
- *    - 'd' komutu ile CC1101 diagnostic calistir
- */
+
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim == &htim2) {
@@ -753,39 +635,7 @@ static void DWT_Init(void)
     DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
-/**
- * @brief Input Capture Interrupt Dogrulama Fonksiyonu
- *
- * AMAC: Pull-up direnci duzeltildikten sonra Input Capture'in dogru calistigini dogrular
- *
- * TEST PROSEDURU:
- * ---------------
- * 1. PA0 baslangic voltajini kontrol eder (HIGH olmali)
- * 2. 10 saniye boyunca kesme sayisini izler
- * 3. Kumandaya basildiginda kesmelerin geldigini dogrular
- * 4. LED'in yanip sondugunu dogrular
- *
- * BASARILI TEST SONUCU:
- * ---------------------
- * - PA0 baslangic: HIGH (1)
- * - Kumandaya basinca: Kesme sayisi artar (>100)
- * - LED yanar/soner
- * - Sinyal yakalanabilir
- *
- * BASARISIZ TEST SONUCU:
- * ----------------------
- * - PA0 baslangic: LOW (0) → Pull-up hala calismyor
- * - Kesme sayisi: 0 → Input Capture tetiklenmiyor
- * - LED yanmiyor → Callback cagirilmiyor
- *
- * SORUN GIDERME:
- * --------------
- * Eger hala kesme gelmiyor:
- *   1. Pull-up baglantisini tekrar kontrol et
- *   2. Multimetre ile PA0 voltajini olc (3.3V olmali)
- *   3. GDO0 → PA0 kablosunu kontrol et
- *   4. CC1101 IOCFG0 register kontrol et ('d' komutu)
- */
+
 static void VerifyInputCapture(void)
 {
     printf("\r\n");
@@ -1131,33 +981,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-    /* Configure RX_GDO0 (PA0) as TIM2_CH1 Alternate Function
-     *
-     * ⚠️  CRITICAL: GPIO_NOPULL - No Pull-up/Pull-down! ⚠️
-     * =====================================================
-     *
-     * TEST RESULTS (2026-01-15):
-     * --------------------------
-     * WITH GPIO_PULLUP:
-     *   ✗ PA0 stuck at 3.3V
-     *   ✗ Zero transitions
-     *   ✗ Input Capture never triggers
-     *   ✗ Signal capture fails
-     *
-     * WITHOUT GPIO_NOPULL:
-     *   ✓ 437 transitions in 5 seconds
-     *   ✓ Input Capture triggers successfully
-     *   ✓ LED blinks
-     *   ✓ Signal capture works
-     *
-     * WHY NO PULL-UP?
-     * ---------------
-     * - CC1101 GDO0 is open-drain output
-     * - Pull-up prevents GDO0 from pulling PA0 LOW
-     * - Mode 0x0D works perfectly without pull-up
-     *
-     * DO NOT ADD EXTERNAL PULL-UP RESISTOR!
-     */
+
     GPIO_InitStruct.Pin = RX_GDO0_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;  // Reverted to NOPULL (Standard Push-Pull)
