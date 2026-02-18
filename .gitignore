@@ -1,0 +1,27 @@
+# STM32CubeIDE / Eclipse Build Artifacts
+Debug/
+Release/
+bin/
+obj/
+
+# Common Output Files
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+
+# IDE specific files (Local settings & Project state)
+.settings/
+*.launch
+.mxproject
+
+# Windows specific
+Thumb.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.bak
+*~
+.DS_Store
