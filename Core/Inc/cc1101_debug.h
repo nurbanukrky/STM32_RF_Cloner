@@ -1,7 +1,6 @@
 /**
  * @file cc1101_debug.h
  * @brief CC1101 Comprehensive Debug Module
- * @author Bitirme Projesi
  *
  * Bu modul CC1101 GDO0 dusuk voltaj sorununu teshis etmek icin
  * kapsamli debug fonksiyonlari icerir.
